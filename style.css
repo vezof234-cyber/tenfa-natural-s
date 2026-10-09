@@ -24,13 +24,15 @@ body:has(#shop:target) .links a[href="#shop"],
 body:has(#shop :target) .links a[href="#shop"],
 body:has(#about:target) .links a[href="#about"]{border-color:var(--olive)}
 #q{flex:1;min-width:140px;max-width:340px;background:var(--panel);border:1px solid var(--line);border-radius:99px;padding:8px 14px;color:var(--text);font:inherit}
-.cartbtn{margin-left:auto;position:relative;background:none;border:0;font-size:22px}
+.nav .sm{margin-left:auto}
+.btn.sm{padding:6px 18px;font-size:14px}
+.cartbtn{position:relative;background:none;border:0;font-size:22px}
 #cnt{position:absolute;top:-6px;right:-8px;background:var(--olive);color:#101408;border-radius:99px;font:700 11px sans-serif;min-width:18px;padding:2px 5px;text-align:center}
 
 /* pages: only one shows at a time (CSS-only routing with :target) */
 main{max-width:1200px;margin:0 auto;padding:0 16px 40px;min-height:70vh}
 main>section{display:none}
-body:not(:has(:target)) #home,#home:target,#shop:target,#shop:has(:target),#about:target{display:block}
+body:not(:has(:target)) #home,main>section:target,#shop:has(:target){display:block}
 .sec{margin-top:36px}
 .sec h2,.sh{font-size:30px;margin-bottom:16px}
 .btn{background:var(--olive2);border:1px solid var(--olive);border-radius:99px;padding:10px 22px;font-weight:500;display:inline-block}
@@ -107,20 +109,65 @@ dialog p{color:var(--mute)}
 @media(max-width:720px){.hero{grid-template-columns:1fr}.ht{padding:24px}.hero-img{min-height:220px}.links{order:3;width:100%;justify-content:space-around}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 
+/* login, sign up, account */
+.authbox{max-width:380px;margin-left:auto;margin-right:auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:28px}
+.authbox h3{font-size:24px;margin:20px 0 6px}
+.authlinks{margin:16px 0 0;font-size:13px;color:var(--mute)}
+.authlinks a{color:var(--olive)}
+.accrow{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.in-only{display:none}
+.in .in-only{display:inline-block}
+.in .out-only{display:none}
+.field{display:block;margin-bottom:14px;color:var(--mute);font-size:13px}
+.field input{display:block;width:100%;margin-top:6px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;color:var(--text);font:inherit;font-size:15px}
+
+/* checkout */
+.checkout{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:900px;align-items:start}
+.paybox{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:24px}
+.paybox h3{font-size:26px;margin:0 0 12px}
+.paybox h3:not(:first-child){margin-top:20px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.sum{list-style:none;margin:0 0 8px;padding:0}
+.sum li{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)}
+.sumrow{display:flex;justify-content:space-between;margin:8px 0}
+.sumrow.tot{font-size:18px}
+.method{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px}
+.method.off{opacity:.55}
+.method small{margin-left:auto;color:var(--olive)}
+#upi-slot{margin-bottom:12px}
+.small{font-size:12px}
+.paybox .btn{margin-top:4px}
+
+/* product page */
+.plink{display:block}
+.crumb{color:var(--mute);font-size:13px;margin:16px 0 0}
+.crumb a:hover{color:var(--olive)}
+.dgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;margin-top:14px;max-width:900px}
+.dimg{position:relative;aspect-ratio:1;border-radius:14px;overflow:hidden;border:1px solid var(--line)}
+.dimg::before{position:absolute;inset:0;display:grid;place-items:center;font-size:96px;background:linear-gradient(135deg,#1e2a1e,#111711)}
+.dimg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.dinfo.card{background:none;border:0;padding:0}
+.dinfo h1{font-size:42px;line-height:1.1}
+.dprice{font:700 38px "Cormorant Garamond",Georgia,serif;color:var(--olive);margin:12px 0 4px}
+.dinfo p{margin:0 0 10px}
+.dinfo .btn{display:block;width:100%;margin-top:10px;border-radius:99px;padding:11px 22px;font-size:15px;text-align:center}
+
+@media(max-width:720px){.checkout,.dgrid{grid-template-columns:1fr}}
+
 /* emoji placeholders (shown until a photo exists) */
-.plants .pi::before,.cc.plants::before{content:"🌱"}
-.fruits .pi::before,.cc.fruits::before{content:"🍎"}
-.veg .pi::before,.cc.veg::before{content:"🥕"}
-.seeds .pi::before,.cc.seeds::before{content:"🌾"}
-.flowers .pi::before,.cc.flowers::before{content:"🌸"}
-.honey .pi::before,.cc.honey::before{content:"🍯"}
-.juices .pi::before,.cc.juices::before{content:"🧃"}
-.coffee .pi::before,.cc.coffee::before{content:"☕"}
-.dairy .pi::before,.cc.dairy::before{content:"🧀"}
-.bakery .pi::before,.cc.bakery::before{content:"🥖"}
-.nuts .pi::before,.cc.nuts::before{content:"🥜"}
-.spices .pi::before,.cc.spices::before{content:"🧂"}
-.gifts .pi::before,.cc.gifts::before{content:"🎁"}
-.wine .pi::before,.cc.wine::before{content:"🍷"}
-.spirits .pi::before,.cc.spirits::before{content:"🥃"}
-.smoking .pi::before,.cc.smoking::before{content:"🚬"}
+.plants .pi::before,.plants .dimg::before,.cc.plants::before{content:"🌱"}
+.fruits .pi::before,.fruits .dimg::before,.cc.fruits::before{content:"🍎"}
+.veg .pi::before,.veg .dimg::before,.cc.veg::before{content:"🥕"}
+.seeds .pi::before,.seeds .dimg::before,.cc.seeds::before{content:"🌾"}
+.flowers .pi::before,.flowers .dimg::before,.cc.flowers::before{content:"🌸"}
+.honey .pi::before,.honey .dimg::before,.cc.honey::before{content:"🍯"}
+.juices .pi::before,.juices .dimg::before,.cc.juices::before{content:"🧃"}
+.coffee .pi::before,.coffee .dimg::before,.cc.coffee::before{content:"☕"}
+.dairy .pi::before,.dairy .dimg::before,.cc.dairy::before{content:"🧀"}
+.bakery .pi::before,.bakery .dimg::before,.cc.bakery::before{content:"🥖"}
+.nuts .pi::before,.nuts .dimg::before,.cc.nuts::before{content:"🥜"}
+.spices .pi::before,.spices .dimg::before,.cc.spices::before{content:"🧂"}
+.gifts .pi::before,.gifts .dimg::before,.cc.gifts::before{content:"🎁"}
+.wine .pi::before,.wine .dimg::before,.cc.wine::before{content:"🍷"}
+.spirits .pi::before,.spirits .dimg::before,.cc.spirits::before{content:"🥃"}
+.smoking .pi::before,.smoking .dimg::before,.cc.smoking::before{content:"🚬"}
