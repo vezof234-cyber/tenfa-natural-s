@@ -338,6 +338,8 @@ function toggleTheme(){var r=document.documentElement,t=r.dataset.theme==='light
     <div class="accrow"><span class="mute">Name</span><b id="accname">Your name</b></div>
     <div class="accrow"><span class="mute">Email</span><b id="accemail">you@example.com</b></div>
     <div class="accrow"><span class="mute">Phone</span><b id="accphone">0000000000</b></div>
+    <p id="verifynote" class="msg" hidden></p>
+    <button type="button" class="btn ghost full resend" hidden>Resend verification email</button>
     <h3>My orders</h3>
     <ul id="orders" class="sum"><li class="mute">No orders yet.</li></ul>
     <h3>Saved address</h3>
@@ -371,6 +373,7 @@ function toggleTheme(){var r=document.documentElement,t=r.dataset.theme==='light
         <div id="upi-slot"><!-- UPI payment (QR code, UPI ID, pay button) will be added here later --></div>
         <button class="btn full">Place Order (demo)</button>
         <p id="paymsg" class="msg" hidden></p>
+        <button type="button" class="btn ghost full resend" hidden>Resend verification email</button>
         <p class="mute small out-only">Please log in to place your order.</p>
         <p class="mute small">Orders are saved as pending. Online payment is coming soon.</p>
       </div>
