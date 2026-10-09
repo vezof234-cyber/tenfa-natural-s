@@ -1,6 +1,6 @@
 /* Structure is in index.html, styling in style.css. This file: cart, search, 18+ check, login and orders (Firebase). */
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile }
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile, sendEmailVerification }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { getFirestore, doc, setDoc, getDoc, addDoc, collection, query, where, getDocs, serverTimestamp }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
@@ -63,6 +63,7 @@ async function signUp(d) {
     const { user } = await createUserWithEmailAndPassword(auth, d.email, d.password);
     await updateProfile(user, { displayName: d.name });
     await setDoc(doc(db, 'users', user.uid), { name: d.name, email: d.email, phone: d.phone }, { merge: true });
+    try { await sendEmailVerification(user); } catch (e) {}   // verification link goes to their inbox
     $('#signupform').reset();
     await fillAccount();
     location.hash = '#account';
@@ -81,6 +82,10 @@ async function logOut() { await signOut(auth); location.hash = '#home'; }
 async function fillAccount() {
   const user = auth.currentUser;
   if (!user) return;
+  try { await user.reload(); if (user.emailVerified) await user.getIdToken(true); } catch (e) {}   // pick up a just-verified email
+  const verified = user.emailVerified;
+  msg('#verifynote', verified ? '' : 'Your email is not verified yet. Open the link we emailed you (check spam).');
+  document.querySelectorAll('.resend').forEach(b => b.hidden = verified);
   let u = {};
   try { const s = await getDoc(doc(db, 'users', user.uid)); if (s.exists()) u = s.data(); } catch (e) {}
   $('#accname').textContent = u.name || user.displayName || '-';
@@ -120,6 +125,8 @@ onAuthStateChanged(auth, async user => {
   else {
     if (owner !== 'guest') { for (const n in cart) delete cart[n]; owner = 'guest'; }   // logged out: empty the cart on screen
     persist(); draw();
+    msg('#verifynote', '');
+    document.querySelectorAll('.resend').forEach(b => b.hidden = true);
     $('#orders').innerHTML = '<li class="mute">No orders yet.</li>';
   }
 });
@@ -127,6 +134,12 @@ onAuthStateChanged(auth, async user => {
 $('#loginform').onsubmit  = e => logIn(form(e));
 $('#signupform').onsubmit = e => signUp(form(e));
 $('#logout').onclick      = () => logOut();
+document.querySelectorAll('.resend').forEach(b => b.onclick = async () => {
+  const u = auth.currentUser;
+  if (!u) return;
+  try { await sendEmailVerification(u); msg('#verifynote', 'Verification email sent. Check your inbox and spam.'); msg('#paymsg', 'Verification email sent. Check your inbox and spam.'); }
+  catch (err) { msg('#verifynote', nice(err)); msg('#paymsg', nice(err)); }
+});
 
 /* ---- payment: placeholder for later (UPI QR / pay button goes in #upi-slot) ---- */
 function startUpiPayment(order) { /* TODO */ }
@@ -203,6 +216,13 @@ $('#payform').onsubmit = async e => {
   if (!total) return msg('#paymsg', 'Your cart is empty.');
   const user = auth.currentUser;
   if (!user) { msg('#loginmsg', 'Please log in to place your order.'); location.hash = '#login'; return; }
+  try { await user.reload(); } catch (e) {}
+  if (!user.emailVerified) {
+    msg('#paymsg', 'Please verify your email first. Open the link we emailed you (check spam), then place your order again.');
+    document.querySelectorAll('.resend').forEach(b => b.hidden = false);
+    return;
+  }
+  try { await user.getIdToken(true); } catch (e) {}
   const items = Object.entries(cart).map(([name, { p, k }]) => ({ name, price: p, qty: k }));
   try {
     await addDoc(collection(db, 'orders'), { uid: user.uid, items, amount: total, address, status: 'pending', createdAt: serverTimestamp() });
