@@ -19,6 +19,29 @@ const $ = s => document.querySelector(s);
 const fmt = v => '₹' + v.toLocaleString('en-IN');
 const cart = {};
 let next = '';
+
+/* ---------------- saved cart: browser copy + account copy ---------------- */
+const KEY = 'tenfa-cart', PRICE = {};
+let owner = 'guest';   // 'guest' or the logged-in user's id
+document.querySelectorAll('#shop .card').forEach(c => { PRICE[c.querySelector('h3').textContent] = +c.dataset.price; });
+const toArr = () => Object.entries(cart).map(([name, { p, k }]) => ({ name, p, k }));
+function fromArr(arr) {   // rebuild the cart, always using today's prices from the page
+  const o = {};
+  (arr || []).forEach(i => { if (i.name in PRICE && i.k > 0) o[i.name] = { p: PRICE[i.name], k: i.k }; });
+  return o;
+}
+function persist() {
+  try { localStorage.setItem(KEY, JSON.stringify({ owner, cart: toArr() })); } catch (e) {}
+  const user = auth.currentUser;
+  if (user && owner === user.uid) {
+    clearTimeout(persist.t);
+    persist.t = setTimeout(() => setDoc(doc(db, 'users', user.uid), { cart: toArr() }, { merge: true }).catch(() => {}), 400);
+  }
+}
+try {
+  const s = JSON.parse(localStorage.getItem(KEY));
+  if (s) { owner = s.owner || 'guest'; Object.assign(cart, fromArr(s.cart)); }
+} catch (e) {}
 const msg = (sel, text) => { const el = $(sel); el.textContent = text || ''; el.hidden = !text; };
 const form = e => { e.preventDefault(); return Object.fromEntries(new FormData(e.target)); };
 const nice = err => ({
@@ -39,7 +62,7 @@ async function signUp(d) {
   try {
     const { user } = await createUserWithEmailAndPassword(auth, d.email, d.password);
     await updateProfile(user, { displayName: d.name });
-    await setDoc(doc(db, 'users', user.uid), { name: d.name, email: d.email, phone: d.phone });
+    await setDoc(doc(db, 'users', user.uid), { name: d.name, email: d.email, phone: d.phone }, { merge: true });
     $('#signupform').reset();
     await fillAccount();
     location.hash = '#account';
@@ -79,10 +102,26 @@ async function loadOrders() {
       : '<li class="mute">No orders yet.</li>';
   } catch (e) {}
 }
-onAuthStateChanged(auth, user => {
+async function syncCart(user) {
+  let remote = [];
+  try { const s = await getDoc(doc(db, 'users', user.uid)); if (s.exists()) remote = s.data().cart || []; } catch (e) {}
+  const merged = fromArr(remote);
+  if (owner === 'guest') {   // items added before logging in are added to the saved cart
+    for (const n in cart) merged[n] = { p: cart[n].p, k: (merged[n]?.k || 0) + cart[n].k };
+  }
+  for (const n in cart) delete cart[n];
+  Object.assign(cart, merged);
+  owner = user.uid;
+  draw(); persist();
+}
+onAuthStateChanged(auth, async user => {
   setLoggedIn(!!user);
-  if (user) fillAccount();
-  else $('#orders').innerHTML = '<li class="mute">No orders yet.</li>';
+  if (user) { await syncCart(user); fillAccount(); }
+  else {
+    if (owner !== 'guest') { for (const n in cart) delete cart[n]; owner = 'guest'; }   // logged out: empty the cart on screen
+    persist(); draw();
+    $('#orders').innerHTML = '<li class="mute">No orders yet.</li>';
+  }
 });
 
 $('#loginform').onsubmit  = e => logIn(form(e));
@@ -137,14 +176,14 @@ document.addEventListener('click', e => {
     const card = b.closest('.card');
     const name = card.querySelector('h1, h3').textContent;
     (cart[name] ??= { p: +card.dataset.price, k: 0 }).k++;
-    draw();
+    draw(); persist();
     if (isBuy) location.hash = '#pay';
     else if (b.closest('.dinfo')) $('#cart').classList.add('open');
   } else if (b.dataset.d) {
     const item = cart[b.dataset.n];
     item.k += +b.dataset.d;
     if (item.k < 1) delete cart[b.dataset.n];
-    draw();
+    draw(); persist();
   }
 });
 
@@ -170,7 +209,7 @@ $('#payform').onsubmit = async e => {
     startUpiPayment({ total, address });
     $('#total').textContent = fmt(total);
     for (const k in cart) delete cart[k];
-    draw();
+    draw(); persist();
     $('#done').showModal();
     loadOrders();
   } catch (err) { msg('#paymsg', nice(err)); }
