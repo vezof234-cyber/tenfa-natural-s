@@ -8,6 +8,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=DM+Sans:wght@400;500;700&family=Noto+Sans+Devanagari:wght@600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<script>
+/* theme: dark by default, remembers the choice */
+(function(){var t='dark';try{t=localStorage.getItem('theme')||'dark'}catch(e){}document.documentElement.dataset.theme=t})();
+function toggleTheme(){var r=document.documentElement,t=r.dataset.theme==='light'?'dark':'light';r.dataset.theme=t;try{localStorage.setItem('theme',t)}catch(e){}}
+</script>
 </head>
 <body>
 
@@ -27,6 +32,7 @@
     <input id="q" type="search" placeholder="Search products" aria-label="Search products">
     <a class="btn sm out-only" href="#login">Login</a>
     <a class="btn sm in-only" href="#account">Account</a>
+    <button class="themebtn" onclick="toggleTheme()" aria-label="Switch between light and dark theme"></button>
     <button id="opencart" class="cartbtn" aria-label="Open cart">🛒<span id="cnt">0</span></button>
   </div>
 </header>
@@ -290,7 +296,7 @@
     <h2 class="sh">About <span class="hi">तेनफ़ा</span> Naturals</h2>
     <p>Tenfa Naturals brings fresh produce, pantry staples, drinks and gifts to your door. We keep the range small and the quality high.</p>
     <p>Rooted in nature, crafted for modern living: natural ingredients, light packaging and quick delivery.</p>
-    <p>Questions or orders? Call +91 00000 00000 or write to ishiyaki@proton.me.<br>Green Earth, Ginam,Kinnaur - HP.</p>
+    <p>Questions or orders? Call +91 00000 00000 or write to ishiyaki@proton.me.<br>Green Earth, Ginam, Kinnaur - HP.</p>
   </div>
 </section>
 
@@ -303,6 +309,7 @@
       <label class="field">Password<input name="password" type="password" placeholder="Password" required></label>
       <button class="btn full">Login</button>
     </form>
+    <p id="loginmsg" class="msg" hidden></p>
     <p class="authlinks">New here? <a href="#signup">Create an account</a></p>
   </div>
 </section>
@@ -319,6 +326,7 @@
       <label class="field">Confirm password<input name="confirm" type="password" placeholder="Repeat the password" required></label>
       <button class="btn full">Sign up</button>
     </form>
+    <p id="signupmsg" class="msg" hidden></p>
     <p class="authlinks">Already have an account? <a href="#login">Login</a></p>
   </div>
 </section>
@@ -331,7 +339,7 @@
     <div class="accrow"><span class="mute">Email</span><b id="accemail">you@example.com</b></div>
     <div class="accrow"><span class="mute">Phone</span><b id="accphone">0000000000</b></div>
     <h3>My orders</h3>
-    <p class="mute">No orders yet.</p>
+    <ul id="orders" class="sum"><li class="mute">No orders yet.</li></ul>
     <h3>Saved address</h3>
     <p class="mute">No address saved yet.</p>
     <button id="logout" class="btn ghost full">Log out</button>
@@ -362,7 +370,9 @@
         <label class="method off"><input type="radio" name="method" disabled> UPI <small>Coming soon</small></label>
         <div id="upi-slot"><!-- UPI payment (QR code, UPI ID, pay button) will be added here later --></div>
         <button class="btn full">Place Order (demo)</button>
-        <p class="mute small">Demo only: no payment is taken. Paying will need a login once login is connected.</p>
+        <p id="paymsg" class="msg" hidden></p>
+        <p class="mute small out-only">Please log in to place your order.</p>
+        <p class="mute small">Orders are saved as pending. Online payment is coming soon.</p>
       </div>
     </form>
   </div>
@@ -1739,7 +1749,7 @@
 
 <footer>
   <p><span class="hi">तेनफ़ा</span> Naturals · Rooted in Nature. Crafted for Modern Living.</p>
-  <p>+91 00000 0000 · @ishiyaki@proton.me · Green Earth, Ginam,Kinnaur - HP</p>
+  <p>+91 00000 00000 · ishiyaki@proton.me · Green Earth, Ginam, Kinnaur - HP</p>
   <p>© 2026 Tenfa Naturals. All rights reserved.</p>
 </footer>
 
@@ -1764,11 +1774,11 @@
 
 <dialog id="done">
   <h2>Order placed</h2>
-  <p>Thank you! Your order of <b id="total"></b> is confirmed.</p>
-  <p>This is a demo site, so no payment was taken.</p>
+  <p>Thank you! Your order of <b id="total"></b> has been placed.</p>
+  <p>Your order is saved as pending. Online payment is coming soon.</p>
   <form method="dialog"><button class="btn">Close</button></form>
 </dialog>
 
-<script src="script.js"></script>
+<script type="module" src="script.js"></script>
 </body>
 </html>
