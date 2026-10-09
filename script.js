@@ -1,26 +1,98 @@
-/* Minimal JavaScript. Structure is in index.html, styling in style.css. */
+/* Structure is in index.html, styling in style.css. This file: cart, search, 18+ check, login and orders (Firebase). */
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile }
+  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { getFirestore, doc, setDoc, getDoc, addDoc, collection, query, where, getDocs, serverTimestamp }
+  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+const app = initializeApp({
+  apiKey: "AIzaSyAeHA-tqPDG4jFqARhXkUvXwO4hscKC7Rg",
+  authDomain: "tenfa-naturals.firebaseapp.com",
+  projectId: "tenfa-naturals",
+  storageBucket: "tenfa-naturals.firebasestorage.app",
+  messagingSenderId: "381988353805",
+  appId: "1:381988353805:web:f453fba4e1c51fe1492244"
+});
+const auth = getAuth(app), db = getFirestore(app);
+
 const $ = s => document.querySelector(s);
 const fmt = v => '₹' + v.toLocaleString('en-IN');
 const cart = {};
 let next = '';
+const msg = (sel, text) => { const el = $(sel); el.textContent = text || ''; el.hidden = !text; };
+const form = e => { e.preventDefault(); return Object.fromEntries(new FormData(e.target)); };
+const nice = err => ({
+  'auth/email-already-in-use': 'This email is already registered. Try logging in.',
+  'auth/invalid-credential': 'Wrong email or password.',
+  'auth/weak-password': 'Password must be at least 6 characters.',
+  'auth/invalid-email': 'Please enter a valid email.',
+  'auth/too-many-requests': 'Too many tries. Please wait a bit and try again.',
+  'permission-denied': 'Not allowed. Please log in again.'
+}[err.code] || 'Something went wrong. Please try again.');
 
-/* ========================================================
-   PLACEHOLDERS: connect these later (login and UPI payment)
-   They are empty on purpose. Nothing happens until we fill them.
-   ======================================================== */
-function signUp(data)  { /* TODO: create the account (Firebase Authentication) */ }
-function logIn(data)   { /* TODO: sign the user in */ }
-function logOut()      { /* TODO: sign the user out */ }
-function startUpiPayment(order) { /* TODO: show UPI QR / pay button inside #upi-slot */ }
-/* Call setLoggedIn(true) after a successful login: it swaps the Login button for Account. */
+/* ---------------- login, sign up, account ---------------- */
 function setLoggedIn(isIn) { document.body.classList.toggle('in', isIn); }
 
-const form = e => { e.preventDefault(); return Object.fromEntries(new FormData(e.target)); };
+async function signUp(d) {
+  msg('#signupmsg', '');
+  if (d.password !== d.confirm) return msg('#signupmsg', 'Passwords do not match.');
+  try {
+    const { user } = await createUserWithEmailAndPassword(auth, d.email, d.password);
+    await updateProfile(user, { displayName: d.name });
+    await setDoc(doc(db, 'users', user.uid), { name: d.name, email: d.email, phone: d.phone });
+    $('#signupform').reset();
+    await fillAccount();
+    location.hash = '#account';
+  } catch (err) { msg('#signupmsg', nice(err)); }
+}
+async function logIn(d) {
+  msg('#loginmsg', '');
+  try {
+    await signInWithEmailAndPassword(auth, d.email, d.password);
+    $('#loginform').reset();
+    location.hash = '#home';
+  } catch (err) { msg('#loginmsg', nice(err)); }
+}
+async function logOut() { await signOut(auth); location.hash = '#home'; }
+
+async function fillAccount() {
+  const user = auth.currentUser;
+  if (!user) return;
+  let u = {};
+  try { const s = await getDoc(doc(db, 'users', user.uid)); if (s.exists()) u = s.data(); } catch (e) {}
+  $('#accname').textContent = u.name || user.displayName || '-';
+  $('#accemail').textContent = user.email;
+  $('#accphone').textContent = u.phone || '-';
+  const n = $('#payform [name=name]'), p = $('#payform [name=phone]');
+  if (!n.value) n.value = u.name || '';
+  if (!p.value) p.value = u.phone || '';
+  loadOrders();
+}
+async function loadOrders() {
+  const user = auth.currentUser;
+  if (!user) return;
+  try {
+    const snap = await getDocs(query(collection(db, 'orders'), where('uid', '==', user.uid)));
+    const rows = snap.docs.map(d => d.data()).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    $('#orders').innerHTML = rows.length
+      ? rows.map(o => `<li><span>${o.items.length} item(s) · ${o.createdAt ? o.createdAt.toDate().toLocaleDateString('en-IN') : 'just now'}<small>Status: ${o.status}</small></span><b>${fmt(o.amount)}</b></li>`).join('')
+      : '<li class="mute">No orders yet.</li>';
+  } catch (e) {}
+}
+onAuthStateChanged(auth, user => {
+  setLoggedIn(!!user);
+  if (user) fillAccount();
+  else $('#orders').innerHTML = '<li class="mute">No orders yet.</li>';
+});
+
 $('#loginform').onsubmit  = e => logIn(form(e));
 $('#signupform').onsubmit = e => signUp(form(e));
 $('#logout').onclick      = () => logOut();
 
-/* ---- 18+ check for alcohol and smoking ---- */
+/* ---- payment: placeholder for later (UPI QR / pay button goes in #upi-slot) ---- */
+function startUpiPayment(order) { /* TODO */ }
+
+/* ---------------- 18+ check for alcohol and smoking ---------------- */
 document.addEventListener('click', e => {
   const a = e.target.closest('a[data-adult]');
   if (a && !document.body.classList.contains('ok')) {
@@ -36,7 +108,7 @@ $('#yes').onclick = () => {
 };
 $('#no').onclick = () => { $('#age').close(); location.hash = '#home'; };
 
-/* ---- cart ---- */
+/* ---------------- cart ---------------- */
 function draw() {
   let total = 0, count = 0, rows = '', sum = '';
   for (const name in cart) {
@@ -84,19 +156,27 @@ $('#order').onclick = () => {
   location.hash = '#pay';
 };
 
-/* ---- checkout form (demo: no payment is taken) ---- */
-$('#payform').onsubmit = e => {
-  const details = form(e);
+/* ---------------- checkout: saves the order as "pending" ---------------- */
+$('#payform').onsubmit = async e => {
+  const address = form(e);
+  msg('#paymsg', '');
   const total = draw();
-  if (!total) return;
-  startUpiPayment({ total, details });   /* later: real UPI payment goes here */
-  $('#total').textContent = fmt(total);
-  for (const k in cart) delete cart[k];
-  draw();
-  $('#done').showModal();
+  if (!total) return msg('#paymsg', 'Your cart is empty.');
+  const user = auth.currentUser;
+  if (!user) { msg('#loginmsg', 'Please log in to place your order.'); location.hash = '#login'; return; }
+  const items = Object.entries(cart).map(([name, { p, k }]) => ({ name, price: p, qty: k }));
+  try {
+    await addDoc(collection(db, 'orders'), { uid: user.uid, items, amount: total, address, status: 'pending', createdAt: serverTimestamp() });
+    startUpiPayment({ total, address });
+    $('#total').textContent = fmt(total);
+    for (const k in cart) delete cart[k];
+    draw();
+    $('#done').showModal();
+    loadOrders();
+  } catch (err) { msg('#paymsg', nice(err)); }
 };
 
-/* ---- search ---- */
+/* ---------------- search ---------------- */
 $('#q').oninput = e => {
   const s = e.target.value.trim().toLowerCase();
   if (s && !$('#shop').matches(':target, :has(:target)')) location.hash = '#shop';
